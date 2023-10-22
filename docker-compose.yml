@@ -1,0 +1,49 @@
+version: "3.9"
+
+name: ssh-configurator-app
+services:
+  front:
+    image: kepins/ssh-configurator-webapp:${APP_VERSION}
+    ports:
+      - "${EXPOSE_ON}:80"
+    env_file:
+      - .env
+  django:
+    image: kepins/ssh-configurator-api:${APP_VERSION}
+    env_file:
+      - .env
+    command: ["docker/django/production/scripts/application.sh"]
+    depends_on:
+      database:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+      redis:
+        condition: service_started
+  database:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 2s
+      timeout: 5s
+      retries: 5
+
+  celery_worker:
+    image: kepins/ssh-configurator-api:${APP_VERSION}
+    env_file:
+      - .env
+    command: ["docker/django/production/scripts/celery.sh"]
+
+  rabbitmq:
+    image: rabbitmq:3.12
+
+  redis:
+    image: redis:7.2
+
+volumes:
+  postgres_data:
+
