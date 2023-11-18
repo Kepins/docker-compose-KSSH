@@ -2,12 +2,20 @@ version: "3.9"
 
 name: ssh-configurator-app
 services:
-  front:
-    image: kepins/ssh-configurator-webapp:${APP_VERSION}
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
     ports:
       - "${EXPOSE_ON}:80"
+    depends_on:
+      - front
+  front:
+    image: kepins/ssh-configurator-webapp:${APP_VERSION}
     env_file:
       - .env
+    depends_on:
+      - django
   django:
     image: kepins/ssh-configurator-api:${APP_VERSION}
     env_file:
